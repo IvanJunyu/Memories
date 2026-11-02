@@ -1,3 +1,4 @@
+import {installPriorityTouch} from './priority-touch.js';
 import {cakeReady} from './chapter4-combat.js';
 import {chapterTitle,CHAPTER_TITLE_SECONDS} from './chapter-transition.js';
 import {applyChapterCompletion,applyChapter3Destination} from './test-completion.js';
@@ -68,14 +69,16 @@ function points(){if(c3.owns(state.scene))return c3.points();if(c2.owns(state.sc
  case 'room2':return [{x:550,y:395,label:'查看后续计划',run:()=>show('milestone',true)}];default:return [];}}
 function interact(){if(dialogue){next();return;}if(c4.locked()){c4.hit();return;}if(c3.locked()){c3.hit();return;}if(c2.locked()){c2.hit();return;}if(locked())return;if(state.scene==='hall'){c4.hit();return;}if(nearest)nearest.run();}
 $('action').onclick=interact;
+const priorityShot=installPriorityTouch($('action'),{enabled:()=>state.scene==='hall'&&!dialogue&&!paused&&!busy&&started&&!state.chapter4.complete&&!state.chapter4.combat?.dead,activate:()=>c4.hit()});
 // Handle touchscreen button taps directly so rapid taps cannot become browser zoom.
 const buttonTouches=new Map();
 $('game').addEventListener('touchstart',e=>{
- for(const touch of e.changedTouches){const button=touch.target.closest?.('button');if(button)buttonTouches.set(touch.identifier,{button,x:touch.clientX,y:touch.clientY});}
+ for(const touch of e.changedTouches){const button=touch.target.closest?.('button');if(button)buttonTouches.set(touch.identifier,{button,x:touch.clientX,y:touch.clientY,priority:button===$('action')&&priorityShot()});}
 },{passive:true});
 $('game').addEventListener('touchend',e=>{
  for(const touch of e.changedTouches){const start=buttonTouches.get(touch.identifier);buttonTouches.delete(touch.identifier);if(!start)continue;
   if(e.cancelable)e.preventDefault();
+  if(start.priority)continue;
   if(Math.hypot(touch.clientX-start.x,touch.clientY-start.y)>16)continue;
   const end=document.elementFromPoint(touch.clientX,touch.clientY)?.closest('button');
   if(end===start.button&&!end.disabled)end.click();
