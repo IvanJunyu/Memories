@@ -68,6 +68,22 @@ function points(){if(c3.owns(state.scene))return c3.points();if(c2.owns(state.sc
  case 'room2':return [{x:550,y:395,label:'查看后续计划',run:()=>show('milestone',true)}];default:return [];}}
 function interact(){if(dialogue){next();return;}if(c4.locked()){c4.hit();return;}if(c3.locked()){c3.hit();return;}if(c2.locked()){c2.hit();return;}if(locked())return;if(state.scene==='hall'){c4.hit();return;}if(nearest)nearest.run();}
 $('action').onclick=interact;
+// Handle touchscreen button taps directly so rapid taps cannot become browser zoom.
+const buttonTouches=new Map();
+$('game').addEventListener('touchstart',e=>{
+ for(const touch of e.changedTouches){const button=touch.target.closest?.('button');if(button)buttonTouches.set(touch.identifier,{button,x:touch.clientX,y:touch.clientY});}
+},{passive:true});
+$('game').addEventListener('touchend',e=>{
+ for(const touch of e.changedTouches){const start=buttonTouches.get(touch.identifier);buttonTouches.delete(touch.identifier);if(!start)continue;
+  if(e.cancelable)e.preventDefault();
+  if(Math.hypot(touch.clientX-start.x,touch.clientY-start.y)>16)continue;
+  const end=document.elementFromPoint(touch.clientX,touch.clientY)?.closest('button');
+  if(end===start.button&&!end.disabled)end.click();
+ }
+},{passive:false});
+$('game').addEventListener('touchcancel',e=>{for(const touch of e.changedTouches)buttonTouches.delete(touch.identifier);},{passive:true});
+$('game').addEventListener('dblclick',e=>{if(e.target.closest?.('button'))e.preventDefault();});
+
 function openMenu(){if(artPreview||!started||busy)return;paused=true;clearInput();show('menu',true);show('returnRoom',c2.owns(state.scene)&&!['room2','hotel','airport'].includes(state.scene)&&!state.chapter2.pending);restartConfirm=false;$('restartNote').textContent='';}
 $('menuBtn').onclick=openMenu;$('resume').onclick=()=>{paused=false;show('menu',false);clearInput();};
 async function start(newGame){roomCat.reset();state=newGame?freshState():(saved||freshState());if(testJump&&jumpChapter==='1'&&(newGame||!saved)){state.phoneRead=true;state.scene='mall';[state.x,state.y]=ARRIVALS.mall;}if((chapter2Demo||chapter3Demo||chapter4Demo)&&(newGame||!saved)){state.phoneRead=true;state.movieWatched=true;state.memories={cinema:true,restaurant:true,beach:true};state.introComplete=true;state.scene='room2';[state.x,state.y]=ARRIVALS.room2;if(chapter3Demo||chapter4Demo){state.chapter2.places={pink:true,aquarium:true,ice:true};state.chapter2.flightComplete=true;state.scene='hotel';[state.x,state.y]=ARRIVALS.hotel;if(chapter4Demo){state.chapter3={shops:{haidilao:true,coconut:true,rotating:true},nightStep:4,cake:true,candleLit:true,returning:false};state.scene='hall';}}}if(jumpComplete)applyChapterCompletion(state,Number(jumpChapter));if(jumpDestination)applyChapter3Destination(state,jumpDestination);started=true;paused=false;busy=false;filmTime=null;cinematic=null;dialogue=null;fadeTime=null;show('dialog',false);show('film',false);show('milestone',false);show('titleScreen',false);show('menu',false);$('fade').style.opacity=0;clearInput();[state.x,state.y]=safePosition(state.scene,state.x,state.y);follower.reset(state.scene,state.x,state.y);busy=true;const ready=await prepareScene(state.scene);busy=false;if(!ready)toast('部分画面加载失败，请刷新重试');save();updateHud();if(state.scene==='metro')startMetro();c2.enter(state.scene);c3.enter(state.scene);c4.enter(state.scene);}

@@ -72,3 +72,6 @@
 @media(orientation:portrait){.finale-cake{width:220px;height:186px}#birthdayEnding .finale-letter h2{font-size:34px}}
 
 .intro-card h2.memories-title{font-size:clamp(40px,10vw,72px);letter-spacing:.02em;white-space:nowrap}
+
+/* Disable double-tap zoom around game controls, including button captions. */
+#game{touch-action:manipulation}#game button,#game button *{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
